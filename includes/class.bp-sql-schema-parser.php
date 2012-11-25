@@ -149,7 +149,7 @@ class BP_SQL_Schema_Parser
 
 				$_columns[$_matches[1]] = array(
 					'Field'   => $_matches[1],
-					'Type'    => ( isset( $_matches[3] ) && is_numeric( $_matches[3] ) ) ? $_matches[2] . '(' . $_matches[3] . ')' . ( ( isset( $_matches[4] ) && strtolower( $_matches[4] ) == 'unsigned' ) ? ' unsigned' : '' ) : $_matches[2],
+					'Type'    => ( is_numeric( $_matches[3] ) ) ? $_matches[2] . '(' . $_matches[3] . ')' . ( ( isset( $_matches[4] ) && strtolower( $_matches[4] ) == 'unsigned' ) ? ' unsigned' : '' ) : $_matches[2],
 					'Null'    => ( 'NOT NULL' == strtoupper( $_matches[5] ) ) ? 'NO' : 'YES',
 					'Default' => ( isset( $_matches[7] ) && 'default' == strtolower( $_matches[7] ) && 'NULL' !== strtoupper( $_matches[8] ) ) ? trim( $_matches[8], "'" ) : null,
 					'Extra'   => ( isset( $_matches[6] ) && 'auto_increment' == strtolower( $_matches[6] ) ) ? 'auto_increment' : ''
@@ -422,7 +422,6 @@ class BP_SQL_Schema_Parser
 
 						// Adjust defaults on columns that allow defaults
 						if (
-							! is_null( $_new_column_data['Default'] ) && // Possibly should use DROP DEFAULT here
 							$_new_column_data['Default'] !== $_existing_table_columns[$_new_column_name]['Default'] &&
 							!in_array(
 								strtolower( $_new_column_data['Type'] ),
@@ -439,9 +438,6 @@ class BP_SQL_Schema_Parser
 							// Don't continue, overwrite this if the next conditional is met
 						}
 
-						// TODO Improve handling of scenarios like http://dev.mysql.com/doc/refman/5.0/en/silent-column-changes.html
-						// The db picks different column data types from the schema and we can't make it change it's mind ;)
-						// e.g. varchar(32) and char(32)
 						if (
 							$_new_column_data['Type'] !== $_existing_table_columns[$_new_column_name]['Type'] ||
 							( 'YES' === $_new_column_data['Null'] xor 'YES' === $_existing_table_columns[$_new_column_name]['Null'] ) ||
@@ -473,8 +469,7 @@ class BP_SQL_Schema_Parser
 						$_existing_table_index['Cardinality'],
 						$_existing_table_index['Packed'],
 						$_existing_table_index['Null'],
-						$_existing_table_index['Comment'],
-						$_existing_table_index['Index_comment']
+						$_existing_table_index['Comment']
 					);
 					$__existing_table_indices[$_existing_table_index['Key_name']][] = $_existing_table_index;
 				}

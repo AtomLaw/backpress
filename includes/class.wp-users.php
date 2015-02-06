@@ -239,7 +239,7 @@ class WP_Users {
 				$sql_field = 'user_email';
 				break;
 			case 'nicename':
-				$non_existant_cache = 'usernicename';
+				$non_existant_cache = 'userslugs';
 				$sql_field = 'user_nicename';
 				break;
 			default:
@@ -471,7 +471,7 @@ class WP_Users {
 			if ( 'users' == $cache_group ) {
 				wp_cache_set($object->user_login, $object->ID, 'userlogins');
 				wp_cache_set($object->user_email, $object->ID, 'useremail');
-				wp_cache_set($object->user_nicename, $object->ID, 'usernicename');
+				wp_cache_set($object->user_nicename, $object->ID, 'userslugs');
 			}
 			return $object;
 		}

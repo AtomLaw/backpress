@@ -416,7 +416,7 @@ class WP_Users {
 		$this->db->query( $this->db->prepare( "DELETE FROM {$this->db->usermeta} WHERE user_id = %d", $user->ID ) );
 
 		wp_cache_delete( $user->ID, 'users' );
-		wp_cache_delete( $user->user_nicename, 'usernicename' );
+		wp_cache_delete( $user->user_nicename, 'userslugs' );
 		wp_cache_delete( $user->user_email, 'useremail' );
 		wp_cache_delete( $user->user_login, 'userlogins' );
 
@@ -452,7 +452,7 @@ class WP_Users {
 				if ( 'users' == $cache_group ) {
 					wp_cache_set( $trans[$i]->user_login, $i, 'userlogins' );
 					wp_cache_set( $trans[$i]->user_email, $i, 'useremail' );
-					wp_cache_set( $trans[$i]->user_nicename, $i, 'usernicename' );
+					wp_cache_set( $trans[$i]->user_nicename, $i, 'userslugs' );
 				}
 			}
 			return $object;

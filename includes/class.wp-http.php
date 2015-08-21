@@ -1777,31 +1777,85 @@ class WP_Http_Encoding {
 	 * 1952 standard gzip decode will be attempted. If all fail, then the
 	 * original compressed string will be returned.
 	 *
-	 * @since 2.8
+	 * @since 2.8.0
 	 *
 	 * @param string $compressed String to decompress.
 	 * @param int $length The optional length of the compressed data.
 	 * @return string|bool False on failure.
 	 */
 	function decompress( $compressed, $length = null ) {
-		$decompressed = gzinflate( $compressed );
 
-		if ( false !== $decompressed )
+		if ( empty($compressed) )
+			return $compressed;
+
+		if ( false !== ( $decompressed = @gzinflate( $compressed ) ) )
 			return $decompressed;
 
-		$decompressed = gzuncompress( $compressed );
+		if ( false !== ( $decompressed = self::compatible_gzinflate( $compressed ) ) )
+			return $decompressed;
 
-		if ( false !== $decompressed )
+		if ( false !== ( $decompressed = @gzuncompress( $compressed ) ) )
 			return $decompressed;
 
 		if ( function_exists('gzdecode') ) {
-			$decompressed = gzdecode( $compressed );
+			$decompressed = @gzdecode( $compressed );
 
 			if ( false !== $decompressed )
 				return $decompressed;
 		}
 
 		return $compressed;
+	}
+
+	/**
+	 * Decompression of deflated string while staying compatible with the majority of servers.
+	 *
+	 * Certain Servers will return deflated data with headers which PHP's gzinflate()
+	 * function cannot handle out of the box. The following function has been created from
+	 * various snippets on the gzinflate() PHP documentation.
+	 *
+	 * Warning: Magic numbers within. Due to the potential different formats that the compressed
+	 * data may be returned in, some "magic offsets" are needed to ensure proper decompression
+	 * takes place. For a simple progmatic way to determine the magic offset in use, see:
+	 * https://core.trac.wordpress.org/ticket/18273
+	 *
+	 * @since 2.8.1
+	 * @link https://core.trac.wordpress.org/ticket/18273
+	 * @link http://au2.php.net/manual/en/function.gzinflate.php#70875
+	 * @link http://au2.php.net/manual/en/function.gzinflate.php#77336
+	 *
+	 * @param string $gzData String to decompress.
+	 * @return string|bool False on failure.
+	 */
+	function compatible_gzinflate($gzData) {
+
+		// Compressed data might contain a full header, if so strip it for gzinflate().
+		if ( substr($gzData, 0, 3) == "\x1f\x8b\x08" ) {
+			$i = 10;
+			$flg = ord( substr($gzData, 3, 1) );
+			if ( $flg > 0 ) {
+				if ( $flg & 4 ) {
+					list($xlen) = unpack('v', substr($gzData, $i, 2) );
+					$i = $i + 2 + $xlen;
+				}
+				if ( $flg & 8 )
+					$i = strpos($gzData, "\0", $i) + 1;
+				if ( $flg & 16 )
+					$i = strpos($gzData, "\0", $i) + 1;
+				if ( $flg & 2 )
+					$i = $i + 2;
+			}
+			$decompressed = @gzinflate( substr($gzData, $i, -8) );
+			if ( false !== $decompressed )
+				return $decompressed;
+		}
+
+		// Compressed data from java.util.zip.Deflater amongst others.
+		$decompressed = @gzinflate( substr($gzData, 2) );
+		if ( false !== $decompressed )
+			return $decompressed;
+
+		return false;
 	}
 
 	/**
